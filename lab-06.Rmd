@@ -1,8 +1,12 @@
 ---
 title: "Lab 06 - Ugly charts and Simpson's paradox"
-author: "Insert your name here"
-date: "Insert date here"
-output: github_document
+author: "Alex Connolly"
+date: "Mar 10 2022"
+output: 
+  html_document: 
+    fig_width: 9
+    fig_height: 7
+    highlight: haddock
 ---
 
 ### Load packages and data
@@ -13,22 +17,110 @@ library(dsbox)
 library(mosaicData) 
 ```
 
+```{r read}
+staff <- read_csv("data/instructional-staff.csv")
+```
+
+```{r long}
+staff_long <- staff %>%
+  pivot_longer(cols = -faculty_type, names_to = "year") %>%
+  mutate(value = as.numeric(value))
+staff_long
+```
+
+```{r graph}
+staff_long %>%
+  ggplot(aes(x = year, y = value, color = faculty_type)) +
+  geom_line()
+```
+
 ### Exercise 1
 
-Remove this text, and add your answer for Exercise 1 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+```{r bigger graph}
+staff_long %>%
+  ggplot(aes(x = year, y = value, group = faculty_type, color = faculty_type)) + labs(title= "Trends in Instructional Staff Employees", color = "Type of Faculty", x= "Year", y= "Percentage of Hires" ) + 
+  geom_line() 
+```
 
 ### Exercise 2
 
-Remove this text, and add your answer for Exercise 1 here.
-Add code chunks as needed.
-Don't forget to label your code chunk.
-Do not use spaces in code chunk labels.
+You could also combine the other positions and do a part time vs everything else
 
 ### Exercise 3
 
-...
+```{r fish}
+fisheries <- read_csv("data/fisheries.csv")
+```
 
-Add exercise headings as needed.
+
+
+
+
+```{r pivot}
+fisheries_new <- fisheries %>%
+  pivot_longer(cols = -country, names_to = "Harvest") %>%
+  filter(Harvest %in% c("capture", "aquaculture")) %>%
+  mutate(value = as.numeric(value))
+fisheries_new
+```
+```{r new}
+fisheries_new <- fisheries_new %>%
+  filter(country %in% c("China", "Russia", "Norway", "Malaysia", "Spain", "Nigeria", "France", "Mauritania", "Ghana", "Mozambique", "Poland", "Sierra Leone", "Laos", "Panama", "Seychelles", "Saudi Arabia"))
+```
+```{r graphh}
+fisheries_new %>%
+  ggplot(mapping = aes(fill = Harvest, y=value, x=country)) + geom_bar(position="stack", stat="identity") + scale_y_log10()
+```
+
+
+I created a new variable, harvest, putting both aquaculture and capture in it so I could create a stacked bar chart. I then log scaled the y axis so you could see more. I then kept only the countries with the most, the ones that were in the chart provided. This made it look much better. I could also adjust the x axis to make it easier to read. 
+
+
+### Exerciser 4
+
+```{r 2}
+library(tidyverse) 
+library(mosaicData) 
+?Whickham
+```
+
+This is likely observational data since it is a survey.
+
+```{r observe}
+nrow(Whickham)
+ncol(Whickham)
+```
+1314 observations, each is a person.
+3 variables, representing if they are alive/dead, smoker or not, and age.
+I would expect the smokers to be more likely to be less healthy. 
+
+```{r whick}
+Whickham %>%
+  ggplot(mapping = aes(fill = outcome, x=smoker)) + geom_bar()
+```
+
+```{r}
+Whickham %>%
+  count(smoker, outcome)
+```
+68.6% of Non smokers are alive
+76% of smokers are alive
+
+```{r mutate}
+Whickham <- Whickham %>%
+  mutate(age_cat = case_when(
+    age <= 44 ~ "18-44",
+    age > 44 & age <= 64 ~ "45-64",
+    age > 64 ~ "65+"
+))
+```
+```{r facet}
+Whickham %>%
+  ggplot(mapping = aes(fill = outcome, x=smoker)) + facet_wrap(~age_cat)+geom_bar() 
+```
+
+```{r age}
+Whickham %>%
+  count(smoker, age_cat, outcome)
+```
+You can see that at a young age, smoking doesnt imapct health status. In middle age, the smokers start to die more, and in old age is where smoking really shows its head. 
